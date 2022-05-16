@@ -105,7 +105,7 @@ List<BenchmarkResult> _runBenchmarks(
 String formatBenchmarks(Map<String, Map<String, BenchmarkResult>> results) {
   final current = results['current']!;
   final refs = results.keys.where((e) => e != 'current').toList()..sort();
-  final benchmarks = current.values.toList()..sort();
+  final benchmarks = current.keys.toList()..sort();
 
   var html =
       '<table><thead><tr><th>Benchmark</th><th>Metric</th><th>Current</th>';
@@ -115,19 +115,19 @@ String formatBenchmarks(Map<String, Map<String, BenchmarkResult>> results) {
   html += '</thead><tbody>';
 
   for (var benchmark in benchmarks) {
-    final currentAverage = current[benchmark.name]!.averageTime;
-    html += '<tr><td rowspan="2">${benchmark.name}</td><td>Average</td>'
+    final currentAverage = current[benchmark]!.averageTime;
+    html += '<tr><td rowspan="2">$benchmark</td><td>Average</td>'
         '<td>${_formatTime(currentAverage)}</td>';
     for (var ref in refs) {
-      final resultAverage = results[ref]![benchmark.name]!.averageTime;
+      final resultAverage = results[ref]![benchmark]!.averageTime;
       html += '<td>${_formatTime(resultAverage, currentAverage)}</td>';
     }
     html += '</tr>';
 
-    final currentMax = current[benchmark.name]!.maxTime;
+    final currentMax = current[benchmark]!.maxTime;
     html += '<tr><td>Max</td><td>${_formatTime(currentMax)}</td>';
     for (var ref in refs) {
-      final resultMax = results[ref]![benchmark.name]!.averageTime;
+      final resultMax = results[ref]![benchmark]!.averageTime;
       html += '<td>${_formatTime(resultMax, currentMax)}</td>';
     }
     html += '</tr>';
