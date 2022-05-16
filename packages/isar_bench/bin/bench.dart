@@ -5,18 +5,12 @@ import 'package:args/args.dart';
 import 'package:isar_bench/benchmark.dart';
 import 'package:path/path.dart' as p;
 
-void main(List<String> args) {
+void main(List<String> args) async {
   final parser = ArgParser();
-  parser.addOption('count', abbr: 'n', defaultsTo: '100');
-  parser.addOption('skip', abbr: 's', defaultsTo: '10');
+  parser.addOption('count', abbr: 'n', defaultsTo: '10');
+  parser.addOption('skip', abbr: 's', defaultsTo: '3');
   parser.addMultiOption('ref', abbr: 'r', defaultsTo: []);
   parser.addMultiOption('benchmark', abbr: 'b', defaultsTo: []);
-  parser.addOption(
-    'format',
-    abbr: 'f',
-    defaultsTo: 'txt',
-    allowed: ['txt', 'md', 'json'],
-  );
   final argResult = parser.parse(args);
 
   final count = int.parse(argResult['count']);
@@ -33,6 +27,7 @@ void main(List<String> args) {
   final result = <String, Map<String, BenchmarkResult>>{};
 
   for (var ref in refs) {
+    await Future.delayed(Duration(milliseconds: 100));
     try {
       String? workingDir;
       if (ref != 'current') {
@@ -73,7 +68,7 @@ List<String> _findAllBenchmarks() {
 String _run(String executable, List<String> arguments,
     {String? workingDirectory}) {
   final process = Process.runSync(executable, arguments,
-      workingDirectory: workingDirectory, runInShell: true);
+      workingDirectory: workingDirectory);
   if (process.exitCode == 0) {
     return process.stdout;
   } else {
@@ -91,9 +86,18 @@ List<BenchmarkResult> _runBenchmarks(
   );
   final results = <BenchmarkResult>[];
   for (var benchmark in benchmarks) {
-    final result = _run(
+    _run(
       Platform.executable,
-      [p.join('lib', 'benchmarks', '$benchmark.dart'), '-n', count.toString()],
+      [
+        'compile',
+        'aot-snapshot',
+        p.join('lib', 'benchmarks', '$benchmark.dart')
+      ],
+      workingDirectory: workingDirectory,
+    );
+    final result = _run(
+      '/Users/simon/flutter/bin/cache/dart-sdk/bin/dartaotruntime',
+      [p.join('lib', 'benchmarks', '$benchmark.aot'), '-n', count.toString()],
       workingDirectory: workingDirectory,
     );
     results.add(BenchmarkResult.fromJson(jsonDecode(result)));
@@ -138,7 +142,7 @@ String formatBenchmarks(Map<String, Map<String, BenchmarkResult>> results) {
 }
 
 String _formatTime(int time, [int? current]) {
-  final timeStr = (time.toDouble() / 1000).toStringAsFixed(1);
+  final timeStr = (time.toDouble() / 1000).toStringAsFixed(2);
   if (current != null) {
     final diff = 100 - ((current.toDouble() / time) * 100).round();
     return '${timeStr}ms (${diff > 0 ? '+' : ''}$diff%)';
