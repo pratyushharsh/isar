@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:args/args.dart';
 
@@ -51,6 +52,11 @@ class BenchmarkResult {
   final String name;
   final List<int> results;
   final String? error;
+
+  late final averageTime =
+      (results.reduce((a, b) => a + b) / results.length).round();
+
+  late final maxTime = results.reduce(max).round();
 
   BenchmarkResult({required this.name, required this.results, this.error});
 

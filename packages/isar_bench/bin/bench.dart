@@ -7,8 +7,8 @@ import 'package:path/path.dart' as p;
 
 void main(List<String> args) {
   final parser = ArgParser();
-  parser.addOption('count', abbr: 'n', defaultsTo: '20');
-  parser.addOption('skip', abbr: 's', defaultsTo: '5');
+  parser.addOption('count', abbr: 'n', defaultsTo: '50');
+  parser.addOption('skip', abbr: 's', defaultsTo: '10');
   parser.addMultiOption('ref', abbr: 'r', defaultsTo: []);
   parser.addMultiOption('benchmark', abbr: 'b', defaultsTo: []);
   parser.addOption(
@@ -30,7 +30,7 @@ void main(List<String> args) {
       ? selectedBenchmarks.where((e) => allBenchmarks.contains(e)).toList()
       : allBenchmarks;
 
-  final result = <String, List<BenchmarkResult>>{};
+  final result = <String, Map<String, BenchmarkResult>>{};
 
   for (var ref in refs) {
     try {
@@ -43,13 +43,17 @@ void main(List<String> args) {
       }
       final results = _runBenchmarks(benchmarks, count + skip, workingDir);
       final skippedResults = results.map((e) => e.skip(skip)).toList();
-      result[ref] = skippedResults;
+      result[ref] = {
+        for (var r in skippedResults) r.name: r,
+      };
     } finally {
-      Directory('isar').deleteSync(recursive: true);
+      if (ref != 'current') {
+        Directory('isar').deleteSync(recursive: true);
+      }
     }
   }
 
-  print('OK');
+  print(formatBenchmarks(result));
 }
 
 List<String> _findAllBenchmarks() {
@@ -96,4 +100,50 @@ List<BenchmarkResult> _runBenchmarks(
     results.add(BenchmarkResult.fromJson(jsonDecode(result)));
   }
   return results;
+}
+
+String formatBenchmarks(Map<String, Map<String, BenchmarkResult>> results) {
+  final current = results['current']!;
+  final refs = results.keys.where((e) => e != 'current').toList()..sort();
+  final benchmarks = current.values.toList()..sort();
+
+  var html =
+      '<table><thead><tr><th>Benchmark</th><th>Metric</th><th>Current</th>';
+  for (var ref in refs) {
+    html += '<th>$ref</th>';
+  }
+  html += '</thead><tbody>';
+
+  for (var benchmark in benchmarks) {
+    final currentAverage = current[benchmark.name]!.averageTime;
+    html += '<tr><td rowspan="2">${benchmark.name}</td><td>Average</td>'
+        '<td>${_formatTime(currentAverage)}</td>';
+    for (var ref in refs) {
+      final resultAverage = results[ref]![benchmark.name]!.averageTime;
+      html += '<td>${_formatTime(resultAverage, currentAverage)}</td>';
+    }
+    html += '</tr>';
+
+    final currentMax = current[benchmark.name]!.maxTime;
+    html += '<tr><td>Max</td><td>${_formatTime(currentMax)}</td>';
+    for (var ref in refs) {
+      final resultMax = results[ref]![benchmark.name]!.averageTime;
+      html += '<td>${_formatTime(resultMax, currentMax)}</td>';
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+
+  return html;
+}
+
+String _formatTime(int time, [int? current]) {
+  final timeStr = (time.toDouble() / 1000).toStringAsFixed(1);
+  if (current != null) {
+    final diff = 100 - ((current.toDouble() / time) * 100).round();
+    return '${timeStr}ms (${diff > 0 ? '+' : ''}$diff%)';
+  } else {
+    return '${timeStr}ms';
+  }
 }
