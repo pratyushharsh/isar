@@ -19,7 +19,7 @@ class User {
 }
 
 final _users = [
-  for (var i = 0; i < 100000; i++)
+  for (var i = 0; i < 10000; i++)
     User(i, 'name$i', i % 100, i % 2 == 0, i.toDouble()),
 ];
 

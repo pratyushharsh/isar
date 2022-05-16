@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 
 void main(List<String> args) {
   final parser = ArgParser();
-  parser.addOption('count', abbr: 'n', defaultsTo: '50');
+  parser.addOption('count', abbr: 'n', defaultsTo: '100');
   parser.addOption('skip', abbr: 's', defaultsTo: '10');
   parser.addMultiOption('ref', abbr: 'r', defaultsTo: []);
   parser.addMultiOption('benchmark', abbr: 'b', defaultsTo: []);
@@ -83,7 +83,6 @@ String _run(String executable, List<String> arguments,
 
 List<BenchmarkResult> _runBenchmarks(
     List<String> benchmarks, int count, String? workingDirectory) {
-  print('AA: $workingDirectory');
   _run(Platform.executable, ['pub', 'get'], workingDirectory: workingDirectory);
   _run(
     Platform.executable,
