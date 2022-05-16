@@ -79,7 +79,8 @@ class BenchmarkResult {
   BenchmarkResult skip(int count) {
     return BenchmarkResult(
       name: name,
-      results: results.sublist(count),
+      results:
+          (results.toList()..sort()).sublist(count, results.length - count),
       error: error,
     );
   }
